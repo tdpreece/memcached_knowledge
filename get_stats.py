@@ -7,11 +7,8 @@ import memcache
 '''
 http://balodeamit.blogspot.co.uk/2014/02/slab-reallocation-in-memcache.html
 To do
-- set automove in script
-- show getting into bad state
-- show automove helping
-- show in bad state that cannot recover from
-- show how automove may help
+- show getting into bad state and automove helping
+  Add details to readme
 
 memory allocated to memcached is 64MB (from /etc/memcached.conf), which
 is equivalent to 64 pages.
