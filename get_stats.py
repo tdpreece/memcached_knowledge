@@ -54,44 +54,43 @@ class MyClient(memcache.Client):
                 serverData[slab[0]][slab[1]] = item[2]
         return data
 
+    def get_my_stats(self):
+        slab_stats_wanted = ('total_pages',)
+        item_stats_wanted = ('evicted',)
+        slab_stats = {
+            k: v for k, v in
+            self.get_slab_stats()[0][1].items() if k.isdigit()
+        }
+        item_stats = {
+            k: v for k, v in
+            self.get_item_stats()[0][1].items() if k.isdigit()
+        }
+
+        my_stats = {}
+        for slab in slab_stats.keys():
+            my_stats[slab] = {}
+            for stat in slab_stats_wanted:
+                my_stats[slab][stat] = slab_stats[slab][stat]
+            for stat in item_stats_wanted:
+                my_stats[slab][stat] = item_stats[slab][stat]
+        return my_stats
+
 
 def main():
     mc = MyClient(['127.0.0.1:11211'])
-    print_page_distribution(mc)
+    print(mc.get_my_stats())
 
     five_hundred_KB_value = 'b' * 500000
     for i in range(0, 150):
         mc.set('big-{}'.format(i), five_hundred_KB_value)
 
-    print_page_distribution(mc)
+    print(mc.get_my_stats())
 
     one_hundred_KB_value = 'a' * 100000
     for i in range(0, 252):
         mc.set('small-{}'.format(i), one_hundred_KB_value)
-    print_page_distribution(mc)
-    print_numbers_evicted(mc)
 
-
-def print_page_distribution(memcache_client):
-    slab_stats = {
-        k: v for k, v in
-        memcache_client.get_slab_stats()[0][1].items() if k.isdigit()
-    }
-    page_distribution = [
-        (slab, stats['total_pages']) for slab, stats in slab_stats.items()
-    ]
-    print(page_distribution)
-
-
-def print_numbers_evicted(memcache_client):
-    item_stats = {
-        k: v for k, v in
-        memcache_client.get_item_stats()[0][1].items() if k.isdigit()
-    }
-    numbers_evicted = [
-        (slab, stats['evicted']) for slab, stats in item_stats.items()
-    ]
-    print(numbers_evicted)
+    print(mc.get_my_stats())
 
 
 if __name__ == '__main__':
