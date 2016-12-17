@@ -1,4 +1,5 @@
 import socket
+from time import sleep
 
 import memcache
 
@@ -6,8 +7,9 @@ import memcache
 '''
 http://balodeamit.blogspot.co.uk/2014/02/slab-reallocation-in-memcache.html
 To do
-done - fill up the cache with items of two sizes with automove=false.
-- print evictions from item stats
+- set automove in script
+- show getting into bad state
+- show automove helping
 - show in bad state that cannot recover from
 - show how automove may help
 
@@ -75,9 +77,36 @@ class MyClient(memcache.Client):
                 my_stats[slab][stat] = item_stats[slab][stat]
         return my_stats
 
+    def enable_automove(self):
+        for s in self.servers:
+            if not s.connect():
+                continue
+            if s.family == socket.AF_INET:
+                name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
+            elif s.family == socket.AF_INET6:
+                name = '[%s]:%s (%s)' % (s.ip, s.port, s.weight)
+            else:
+                name = 'unix:%s (%s)' % (s.address, s.weight)
+            s.send_cmd('slabs automove 1')
+            s.expect(b'OK')
+
+    def disable_automove(self):
+        for s in self.servers:
+            if not s.connect():
+                continue
+            if s.family == socket.AF_INET:
+                name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
+            elif s.family == socket.AF_INET6:
+                name = '[%s]:%s (%s)' % (s.ip, s.port, s.weight)
+            else:
+                name = 'unix:%s (%s)' % (s.address, s.weight)
+            s.send_cmd('slabs automove 0')
+            s.expect(b'OK')
+
 
 def main():
     mc = MyClient(['127.0.0.1:11211'])
+    mc.disable_automove()
     print(mc.get_my_stats())
 
     five_hundred_KB_value = 'b' * 500000
@@ -87,10 +116,19 @@ def main():
     print(mc.get_my_stats())
 
     one_hundred_KB_value = 'a' * 100000
-    for i in range(0, 252):
-        mc.set('small-{}'.format(i), one_hundred_KB_value)
+    for i in range(0, 20):
+        for i in range(0, 252):
+            mc.set('small-{}'.format(i), one_hundred_KB_value)
+        print(mc.get_my_stats())
+        sleep(5)
 
-    print(mc.get_my_stats())
+    mc.enable_automove()
+    print('Enabled automove')
+    for i in range(0, 20):
+        for i in range(0, 252):
+            mc.set('small-{}'.format(i), one_hundred_KB_value)
+        print(mc.get_my_stats())
+        sleep(5)
 
 
 if __name__ == '__main__':

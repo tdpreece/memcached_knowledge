@@ -46,6 +46,17 @@ VERSION 1.4.14 (Ubuntu)
 ## How the cache grows
 
 
+## Reassignment of slabs
+
+To allow reassignment of slabs (I feature introduced in [v1.4.11](https://github.com/memcached/memcached/wiki/ReleaseNotes1411)
+I added the following line to `/etc/memcached.conf` and restarted the
+memcached server (slab reassignment can only be enabled at start time).
+
+```
+-o slab_reassign
+```
+
+
 ```bash
 echo "slabs automove 0" | nc localhost 11211
 ```
