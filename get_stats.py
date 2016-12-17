@@ -1,3 +1,5 @@
+import socket
+
 import memcache
 
 
@@ -22,8 +24,39 @@ to 103496KB and can store 10 chunk per page.
 
 '''
 
+
+class MyClient(memcache.Client):
+    def get_item_stats(self):
+        data = []
+        for s in self.servers:
+            if not s.connect():
+                continue
+            if s.family == socket.AF_INET:
+                name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
+            elif s.family == socket.AF_INET6:
+                name = '[%s]:%s (%s)' % (s.ip, s.port, s.weight)
+            else:
+                name = 'unix:%s (%s)' % (s.address, s.weight)
+            serverData = {}
+            data.append((name, serverData))
+            s.send_cmd('stats items')
+            readline = s.readline
+            while 1:
+                line = readline()
+                if not line or line.strip() == 'END':
+                    break
+
+                # e.g. STAT items:40:evicted_unfetched 1842
+                item = line.split(' ', 2)
+                slab = item[1].split(':', 2)[1:]
+                if slab[0] not in serverData:
+                    serverData[slab[0]] = {}
+                serverData[slab[0]][slab[1]] = item[2]
+        return data
+
+
 def main():
-    mc = memcache.Client(['127.0.0.1:11211'])
+    mc = MyClient(['127.0.0.1:11211'])
     print_page_distribution(mc)
 
     five_hundred_KB_value = 'b' * 500000
@@ -36,12 +69,29 @@ def main():
     for i in range(0, 252):
         mc.set('small-{}'.format(i), one_hundred_KB_value)
     print_page_distribution(mc)
+    print_numbers_evicted(mc)
 
 
 def print_page_distribution(memcache_client):
-    slab_stats = {k: v for k, v in memcache_client.get_slab_stats()[0][1].items() if k.isdigit()}
-    page_distribution = [(slab, stats['total_pages']) for slab, stats in slab_stats.items()]
+    slab_stats = {
+        k: v for k, v in
+        memcache_client.get_slab_stats()[0][1].items() if k.isdigit()
+    }
+    page_distribution = [
+        (slab, stats['total_pages']) for slab, stats in slab_stats.items()
+    ]
     print(page_distribution)
+
+
+def print_numbers_evicted(memcache_client):
+    item_stats = {
+        k: v for k, v in
+        memcache_client.get_item_stats()[0][1].items() if k.isdigit()
+    }
+    numbers_evicted = [
+        (slab, stats['evicted']) for slab, stats in item_stats.items()
+    ]
+    print(numbers_evicted)
 
 
 if __name__ == '__main__':
