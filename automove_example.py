@@ -4,23 +4,12 @@ from time import sleep
 import memcache
 
 
-'''
-To do
-- show getting into bad state and automove helping
-  Add details to readme
-
-memory allocated to memcached is 64MB (from /etc/memcached.conf), which
-is equivalent to 64 pages.
-
-The 500MB value will go in slab 40, which stores chunks of size up
-to 616944KB and can store 1 chunk per page.
-64 sets with unique keys will fill up the cache.
-The 100MB value will go in slab 32, which stores chunks of size up
-to 103496KB and can store 10 chunk per page.
-640 sets with unique keys will fill up the cache.
-
-
-'''
+# The 500MB value will go in slab 40, which stores chunks of size up
+# to 616944KB and can store 1 chunk per page.
+# 64 sets with unique keys will fill up the cache.
+# The 100MB value will go in slab 32, which stores chunks of size up
+# to 103496KB and can store 10 chunk per page.
+# 640 sets with unique keys will fill up the cache.
 
 
 class MyClient(memcache.Client):

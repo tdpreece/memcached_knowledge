@@ -4,15 +4,6 @@ title: "Memcached"
 date: 2016-12-14
 ---
 
-Todo:
-
-* Add image of how memcache uses memory (pages, slabs, chunks)
-* example with autoallocatin turned off and getting into a bad state
-* run same example with autoallocation turned on
-* example with multiple instances
-* example with reprecache to add replicas (how failover works)
-* how to scale
-
 The following was done on Ubuntu 14.04.1.
 
 # Installation
