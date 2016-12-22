@@ -70,12 +70,12 @@ the allocation of pages would look like the following:
 +---+---+---+
 ```
 
-The default behaviour is that slabs aren't reassigned so the cache.  If
+The default behaviour is that slabs aren't reassigned.  If
 the cache fills up with pages predominantly allocated to a few slab classes
 and then the size of items being stored changes (thus requiring different
 slab classes), you could end up with only a few pages actually being used
-for the items you now want to cache.  This can be overcome by swithching
-on the automove feature, which is demonstrated in the next section.
+for the items you now want to cache.  This can be overcome by switching
+on the automove feature, which is described in the next section.
 
 ## Reassignment of slabs
 
@@ -95,7 +95,7 @@ echo "slabs automove 1" | nc localhost 11211
 ```
 
 A demonstration of automove can be seen by running the `automove_example.py`
-file in the repo (output shown below),
+file in this repo (output shown below),
 
 ```bash
 $ python automove_example.py 
@@ -138,7 +138,8 @@ Disabled autmove
 {'32': {'total_pages': '8', 'cmd_set': '180000', 'evicted': '179920'}, '40': {'total_pages': '57', 'cmd_set': '450', 'evicted': '386'}}
 ```
 As can be seen above, enabling automove results in pages being reallocated from slab `40` to slab `32`.  The algorithm for automove is
-> > "If a slab class is seen as having the highest eviction count 3 times 10 seconds apart, it will take a page from a slab class which has had zero evictions in the last 30 seconds and move the memory."
+> "If a slab class is seen as having the highest eviction count 3 times 10 seconds apart, it will take a page from a slab class which has had zero evictions in the last 30 seconds and move the memory."
+
 (see [v1.4.11](https://github.com/memcached/memcached/wiki/ReleaseNotes1411) release notes).
 
 # Multiple instances
@@ -150,7 +151,9 @@ a key resides via an algorithm like,
 node_index = hash(key) % number_of_nodes
 ```
 
-Adding nodes is difficult.
+Adding nodes is difficult as adding a node would result in many items being
+relocated thus resulting in many misses for a period after adding the new
+node.
 
 # Replicas
 
