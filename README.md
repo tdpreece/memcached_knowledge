@@ -63,11 +63,11 @@ or the following command,
 echo "slabs automove 1" | nc localhost 11211
 ```
 
-A demonstration of automove can be seen by running the `get_stats.py`
+A demonstration of automove can be seen by running the `automove_example.py`
 file in the repo (output shown below),
 
 ```bash
-$ python get_stats.py 
+$ python automove_example.py 
 Disabled autmove
 {'32': {'total_pages': '6', 'cmd_set': '120000', 'evicted': '119940'}, '40': {'total_pages': '59', 'cmd_set': '300', 'evicted': '236'}}
 Fill cache with 500KB items
@@ -106,6 +106,10 @@ Disabled autmove
 {'32': {'total_pages': '8', 'cmd_set': '178000', 'evicted': '177920'}, '40': {'total_pages': '57', 'cmd_set': '450', 'evicted': '386'}}
 {'32': {'total_pages': '8', 'cmd_set': '180000', 'evicted': '179920'}, '40': {'total_pages': '57', 'cmd_set': '450', 'evicted': '386'}}
 ```
+As can be seen above, enabling automove results in pages being reallocated from slab `40` to slab `32`.  The algorithm for automove is
+> > "If a slab class is seen as having the highest eviction count 3 times 10 seconds apart, it will take a page from a slab class which has had zero evictions in the last 30 seconds and move the memory."
+(see [v1.4.11](https://github.com/memcached/memcached/wiki/ReleaseNotes1411) release notes).
+
 
 ## References
 * http://balodeamit.blogspot.co.uk/2014/02/slab-reallocation-in-memcache.html
