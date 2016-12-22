@@ -5,7 +5,6 @@ import memcache
 
 
 '''
-http://balodeamit.blogspot.co.uk/2014/02/slab-reallocation-in-memcache.html
 To do
 - show getting into bad state and automove helping
   Add details to readme
@@ -54,7 +53,7 @@ class MyClient(memcache.Client):
         return data
 
     def get_my_stats(self):
-        slab_stats_wanted = ('total_pages',)
+        slab_stats_wanted = ('total_pages', 'cmd_set')
         item_stats_wanted = ('evicted',)
         slab_stats = {
             k: v for k, v in
@@ -86,6 +85,7 @@ class MyClient(memcache.Client):
                 name = 'unix:%s (%s)' % (s.address, s.weight)
             s.send_cmd('slabs automove 1')
             s.expect(b'OK')
+        print('Enabled automove')
 
     def disable_automove(self):
         for s in self.servers:
@@ -99,6 +99,7 @@ class MyClient(memcache.Client):
                 name = 'unix:%s (%s)' % (s.address, s.weight)
             s.send_cmd('slabs automove 0')
             s.expect(b'OK')
+        print('Disabled autmove')
 
 
 def main():
@@ -106,26 +107,51 @@ def main():
     mc.disable_automove()
     print(mc.get_my_stats())
 
-    five_hundred_KB_value = 'b' * 500000
-    for i in range(0, 150):
-        mc.set('big-{}'.format(i), five_hundred_KB_value)
-
+    print('Fill cache with 500KB items')
+    key_value_pairs = key_value_pair_generator(size_kb=500, quantity=150)
+    set_many(mc, key_value_pairs)
     print(mc.get_my_stats())
 
-    one_hundred_KB_value = 'a' * 100000
-    for i in range(0, 20):
-        for i in range(0, 252):
-            mc.set('small-{}'.format(i), one_hundred_KB_value)
+    print('Start adding 100KB items')
+    for i in range(0, 10):
+        key_value_pairs = key_value_pair_generator(size_kb=100, quantity=2000)
+        set_many(mc, key_value_pairs)
         print(mc.get_my_stats())
         sleep(5)
 
     mc.enable_automove()
-    print('Enabled automove')
-    for i in range(0, 20):
-        for i in range(0, 252):
-            mc.set('small-{}'.format(i), one_hundred_KB_value)
+    for i in range(0, 10):
+        key_value_pairs = key_value_pair_generator(size_kb=100, quantity=2000)
+        set_many(mc, key_value_pairs)
         print(mc.get_my_stats())
         sleep(5)
+
+    mc.disable_automove()
+    for i in range(0, 10):
+        key_value_pairs = key_value_pair_generator(size_kb=100, quantity=2000)
+        set_many(mc, key_value_pairs)
+        print(mc.get_my_stats())
+        sleep(5)
+
+
+def key_value_pair_generator(size_kb, quantity):
+    value = 'a' * (size_kb * 1000)
+    for i in range(0, quantity):
+        yield (get_key(), value)
+
+
+key = 0
+
+
+def get_key():
+    global key
+    key += 1
+    return str(key)
+
+
+def set_many(mc, key_value_pairs):
+    for k, v in key_value_pairs:
+        mc.set(k, v)
 
 
 if __name__ == '__main__':
