@@ -45,6 +45,52 @@ VERSION 1.4.14 (Ubuntu)
 
 ## How the cache grows
 
+* Storage is broken up into 1 megabyte pages.
+* A page is assigned a slab class, which denotes that that page stores items a
+  particular size.
+* These size ranges are determined by a configurable growth factor.
+
+```
+$ memcached -vv
+slab class   1: chunk size        96 perslab   10922
+slab class   2: chunk size       120 perslab    8738
+slab class   3: chunk size       152 perslab    6898
+slab class   4: chunk size       192 perslab    5461
+slab class   5: chunk size       240 perslab    4369
+slab class   6: chunk size       304 perslab    3449
+slab class   7: chunk size       384 perslab    2730
+slab class   8: chunk size       480 perslab    2184
+slab class   9: chunk size       600 perslab    1747
+...
+```
+
+Thus, if I wanted to store a 140 byte item, memcached would have to make sure
+that at least one page was assigned to slab class 3.
+
+The allocation of pages to slab classes happens dynamically as memcached
+receieves set commands for items of a given size.
+
+e.g. If I had allocated 9MB to memcached and sent set commands for:
+* 9000 items of 105 bytes
+* 4300 items of 500 bytes
+the allocation of pages would look like the following:
+
+```
++---+---+---+
+| 2 | 2 | 9 |
++---+---+---+
+| 9 | 9 |   |
++---+---+---+
+|   |   |   |
++---+---+---+
+```
+
+The default behaviour is that slabs aren't reassigned so the cache.  If
+the cache fills up with pages predominantly allocated to a few slab classes
+and then the size of items being stored changes (thus requiring different
+slab classes), you could end up with only a few pages actually being used
+for the items you now want to cache.  This can be overcome by swithching
+on the automove feature, which is demonstrated in the next section.
 
 ## Reassignment of slabs
 
@@ -110,6 +156,22 @@ As can be seen above, enabling automove results in pages being reallocated from 
 > > "If a slab class is seen as having the highest eviction count 3 times 10 seconds apart, it will take a page from a slab class which has had zero evictions in the last 30 seconds and move the memory."
 (see [v1.4.11](https://github.com/memcached/memcached/wiki/ReleaseNotes1411) release notes).
 
+# Multiple instances
+
+When multiple instances of memcached are used the client decides which node a
+a key resides via an algorithm like,
+
+```
+node_index = hash(key) % number_of_nodes
+```
+
+Adding nodes is difficult.
+
+# Replicas
+
+http://repcached.lab.klab.org/
+
 
 ## References
+* https://github.com/memcached/memcached/wiki/UserInternals
 * http://balodeamit.blogspot.co.uk/2014/02/slab-reallocation-in-memcache.html
