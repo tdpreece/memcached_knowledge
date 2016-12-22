@@ -1,9 +1,3 @@
----
-layout: post
-title: "Memcached"
-date: 2016-12-14
----
-
 The following was done on Ubuntu 14.04.1.
 
 # Installation
